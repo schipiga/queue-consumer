@@ -28,6 +28,8 @@ class Worker(Thread):
                     future = self._executor.submit(self._queue.handler, chunk)
                     future.add_done_callback(partial(self._task_done, chunk=chunk))
 
+                    support.statsd.increment('started.messages', len(chunk))
+
                 if self._shutdown:
                     return
 
@@ -44,9 +46,9 @@ class Worker(Thread):
 
         if exc:
             support.logger.error(f'Oops! Handler is failed: {repr(e)}', exc_info=exc)
-            support.statsd.increment('failed.messages')
+            support.statsd.increment('failed.messages', len(chunk))
             return
 
         if hasattr(self._queue, 'cleanup'):
             self._queue.cleanup(chunk)
-        support.statsd.increment('successful.messages')
+        support.statsd.increment('successful.messages', len(chunk))

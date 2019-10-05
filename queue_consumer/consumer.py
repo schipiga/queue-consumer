@@ -31,13 +31,17 @@ class Consumer:
     def start(self):
         for worker in self._workers:
             worker.start()
+        support.logger.info('Queue Consumer is started')
 
     def shutdown(self):
         self._shutdown = True
         for worker in self._workers:
             worker.shutdown()
+        support.logger.info('Queue Consumer is shutdown')
 
     def supervise(self, blocking=False, polling_time=1):
+        support.logger.debug(
+            f'Consumer supervising in {"blocking" if blocking else "non-blocking"} mode ...')
 
         def _supervise():
             while True:
