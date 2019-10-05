@@ -20,6 +20,7 @@ class Worker(Thread):
         self._polling_time = polling_time
 
     def run(self):
+        support.logger.info('Worker is running')
         try:
             while True:
                 messages = self._queue.get()
