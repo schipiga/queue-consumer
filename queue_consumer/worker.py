@@ -26,7 +26,9 @@ class Worker(Thread):
 
                 for chunk in chunkify(messages, self._bulk_size):
                     future = self._executor.submit(self._queue.handler, chunk)
-                    future.add_done_callback(partial(self._task_done, chunk=chunk))
+                    future.add_done_callback(partial(self._task_done,
+                                                     successful_messages=chunk,
+                                                     started_messages=chunk[:]))
 
                     support.statsd.increment('started.messages', len(chunk))
 
@@ -41,14 +43,21 @@ class Worker(Thread):
     def shutdown(self):
         self._shutdown = True
 
-    def _task_done(self, future, chunk):
+    def _task_done(self, future, successful_messages, started_messages):
         exc = future.exception()
+
+        if exc and (len(started_messages) == 1):
+            failed_messages = started_messages
+            successful_messages[:] = []
+        else:
+            failed_messages = list(set(started_messages) - set(successful_messages))
 
         if exc:
             support.logger.error(f'Oops! Handler is failed: {repr(e)}', exc_info=exc)
-            support.statsd.increment('failed.messages', len(chunk))
-            return
+            if failed_messages:
+                support.statsd.increment('failed.messages', len(failed_messages))
 
-        if hasattr(self._queue, 'cleanup'):
-            self._queue.cleanup(chunk)
-        support.statsd.increment('successful.messages', len(chunk))
+        if successful_messages:
+            if hasattr(self._queue, 'cleanup'):
+                self._queue.cleanup(successful_messages)
+            support.statsd.increment('successful.messages', len(successful_messages))
