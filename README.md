@@ -49,14 +49,39 @@ class Queue:
         )
 
     def handler(self, messages):
-        _messages = messages[:]
-        messages[:] = []
-        for message in _messages:
+        for message in messages:
             do_some_stuff(message)
-            messages.append(message)
 
 
 consumer = Consumer(Queue("my_queue"))
 consumer.start()
 consumer.supervise(blocking=True)
 ```
+
+if queue with get already exists, handler can be defined separately, like:
+
+```python
+def handler(messages):
+    for message in messages:
+        do_some_stuff(message)
+```
+
+A hanlder takes iterator as argument. If handler raises exception, worker defines not processed (failed) messages basing on iterator remaining content. That's why messages should be read & processed one-by-one. To read all iterator before processing is bad idea.
+
+**Right:**
+
+```python
+def handler(message):
+    for message in messages:
+        process(message)
+```
+
+**Wrong:**
+
+```python
+def handler(messages):
+    for message in list(messages):
+        process(message)
+```
+
+It doesn't matter when bulk_size is 1 (default), when to read one message is the same as to read all iterator.

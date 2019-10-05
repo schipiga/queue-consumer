@@ -13,7 +13,7 @@ __all__ = (
 
 class Worker(Thread):
 
-    def __init__(self, queue, executor, bulk_size=1, polling_time=0):
+    def __init__(self, queue, executor, handler, bulk_size=1, polling_time=0):
         self._queue = queue
         self._executor = executor
         self._bulk_size = bulk_size
@@ -26,10 +26,11 @@ class Worker(Thread):
                 messages = self._queue.get()
 
                 for chunk in chunkify(messages, self._bulk_size):
-                    future = self._executor.submit(self._queue.handler, chunk)
+                    iterator = iter(chunk)
+                    future = self._executor.submit(self._handler, iterator)
                     future.add_done_callback(partial(self._task_done,
-                                                     successful_messages=chunk,
-                                                     started_messages=chunk[:]))
+                                                     sent_iterator=iterator,
+                                                     sent_messages=chunk))
 
                     support.statsd.increment('started.messages', len(chunk))
 
@@ -44,19 +45,17 @@ class Worker(Thread):
     def shutdown(self):
         self._shutdown = True
 
-    def _task_done(self, future, successful_messages, started_messages):
+    def _task_done(self, future, sent_iterator, sent_messages):
         exc = future.exception()
 
-        if exc and (len(started_messages) == 1):
-            failed_messages = started_messages
-            successful_messages[:] = []
-        else:
-            failed_messages = list(set(started_messages) - set(successful_messages))
+        failed_messages = list(sent_iterator)
+        if exc:
+            failed_messages = sent_messages[-len(failed_messages) - 1:]
+        successful_messages = sent_messages[:-len(failed_messages)]
 
         if exc:
             support.logger.error(f'Oops! Handler is failed: {repr(e)}', exc_info=exc)
-            if failed_messages:
-                support.statsd.increment('failed.messages', len(failed_messages))
+            support.statsd.increment('failed.messages', len(failed_messages))
 
         if successful_messages:
             if hasattr(self._queue, 'cleanup'):

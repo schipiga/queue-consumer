@@ -17,11 +17,14 @@ class Consumer:
 
     def __init__(self,
                  queue,
+                 handler=None,
                  max_workers=cpu_count() * 4,
                  max_handlers=cpu_count() * 4 * 4,
                  messages_bulk_size=1,
                  worker_polling_time=0):
         self._queue = queue
+        self._handler = getattr(self._queue, 'handler', handler)
+        assert self._handler, 'Messages handler is not defined!'
         self._executor = BoundedThreadPool(max_handlers)
         self._messages_bulk_size = messages_bulk_size
         self._worker_polling_time = worker_polling_time
@@ -72,5 +75,6 @@ class Consumer:
     def _get_worker(self):
         return Worker(self._queue,
                       self._executor,
+                      self._handler,
                       self._messages_bulk_size,
                       self._worker_polling_time)
