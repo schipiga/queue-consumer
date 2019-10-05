@@ -1,14 +1,12 @@
 # Concurrent queue consumer
 
-##### Service, which consumes messages from a queue in multithreading mode and pass them to handlers, launched with other threads as well.
+#### Service, which consumes messages from a queue in multithreading mode and pass them to handlers, launched with other threads as well.
 
-This project is born under inspiration of https://github.com/goodmanship/sqsworkers/ , where I would like to implement my vision of proper architecture in such projects.
+This project was born under inspiration of https://github.com/goodmanship/sqsworkers/ , where I would like to implement my vision of proper architecture in such projects.
 
-My main concern was to make consumer more abstract, not related with AWS SQS only.
+My main concern was to make consumer more abstract, not related with AWS SQS only. Although I plan to use it mostly for AWS SQS consuming.
 
-But of course my personal usage for SQS.
-
-With it's code it follows conveyor conception.
+It follows the principle of conveyor assembly, when each stage of the assembly pass the items that have passed the previous stage. Failed items are rejected.
 
 ## How to use
 
@@ -58,12 +56,15 @@ consumer.start()
 consumer.supervise(blocking=True)
 ```
 
-if queue with get already exists, handler can be defined separately, like:
+Method to `cleanup` is optional. SQS requires explicit item deletion from queue.
+Also if there is a queue with `get` already, handler can be defined separately, like:
 
 ```python
 def handler(messages):
     for message in messages:
         do_some_stuff(message)
+
+consumer = Consumer(queue, handler=handler)
 ```
 
 A hanlder takes iterator as argument. If handler raises exception, worker defines not processed (failed) messages basing on iterator remaining content. That's why messages should be read & processed one-by-one. To read all iterator before processing is bad idea.
@@ -85,3 +86,43 @@ def handler(messages):
 ```
 
 It doesn't matter when bulk_size is 1 (default), when to read one message is the same as to read all iterator.
+
+## API
+
+```python
+Consumer(
+    queue,
+    handler=None,
+    max_workers=cpu_count() * 4,
+    max_handlers=cpu_count() * 4 * 4,
+    messages_bulk_size=1,
+    worker_polling_time=0)
+```
+
+Instantiate `consumer` object. Arguments:
+- `queue` - Queue which to consume messages from.
+- `handler=None` - Handler to processes messages. If `None` it try to take `queue.handler`. If no one exception is raised.
+- `max_workers=cpu_count() * 4` - Maximum number of concurrent workers to read messages from queue.
+- `max_handlers=cpu_count() * 4 * 4` - Maximum number of concurrent handlers to process messages from all workers.
+- `messages_bulk_size=1` - Maximum number of messages sending to handler. Not bigger that `queue.get` can return.
+- `worker_polling_time=0` - Seconds to sleep between `queue.get` calls. Can be fractional.
+
+```python
+consumer.start()
+```
+
+Starts consumer workers.
+
+```python
+consumer.shutdown()
+```
+
+Shuts down consumer workers. **NB!** Can't be `.start()` again.
+
+```python
+consumer.supervise(blocking=False, polling_time=1)
+```
+
+Starts to supervise workers and to revive died. Arguments:
+- `blocking=False` - Supervise will not block / block main thread.
+- `polling_time=1` - Seconds to sleep between workers checking. Can be fractional.
