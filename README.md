@@ -1,6 +1,6 @@
 # Concurrent queue consumer
 
-#### Service, which consumes messages from a queue in multithreading mode and pass them to handlers, launched with other threads as well.
+#### Service, which consumes messages from a queue in multithreading mode and passes them to handlers, launched with other threads as well.
 
 This project was born under inspiration of https://github.com/goodmanship/sqsworkers/ , where I would like to implement my vision of proper architecture in such projects.
 
@@ -67,7 +67,7 @@ def handler(messages):
 consumer = Consumer(queue, handler=handler)
 ```
 
-A hanlder takes iterator as argument. If handler raises exception, worker defines not processed (failed) messages basing on iterator remaining content. That's why messages should be read & processed one-by-one. To read all iterator before processing is bad idea.
+A handler takes iterator as argument. If handler raises exception, worker defines not processed (failed) messages basing on iterator remaining content. That's why messages should be read & processed one-by-one. To read all iterator before processing is bad idea.
 
 **Right:**
 
@@ -85,7 +85,7 @@ def handler(messages):
         process(message)
 ```
 
-It doesn't matter when bulk_size is 1 (default), when to read one message is the same as to read all iterator.
+It doesn't matter with `messages_bulk_size=1` (default), when to read one message is the same as to read all iterator.
 
 ## API
 

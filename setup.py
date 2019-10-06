@@ -9,6 +9,5 @@ setup(
     author='Sergei Chipiga <chipiga86@gmail.com>',
     author_email='chipiga86@gmail.com',
     packages=['queue_consumer'],
-    install_requires=['bounded-pool'],
-    dependency_links=['https://github.com/schipiga/bounded-pool/tarball/master#egg=bounded-pool-0.1'],
+    install_requires=['bounded-pool @ git+https://github.com/schipiga/bounded-pool'],
 )

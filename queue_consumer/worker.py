@@ -18,6 +18,8 @@ class Worker(Thread):
         self._executor = executor
         self._bulk_size = bulk_size
         self._polling_time = polling_time
+        self._shutdown = False
+        super().__init__()
 
     def run(self):
         support.logger.info('Worker is running')
@@ -40,7 +42,7 @@ class Worker(Thread):
                 time.sleep(self._polling_time)
 
         except Exception as exc:
-            support.logger.error(f'Oops! Worker is failed: {repr(e)}', exc_info=exc)
+            support.logger.error(f'Oops! Worker is failed: {repr(exc)}', exc_info=exc)
             raise
 
     def shutdown(self):
