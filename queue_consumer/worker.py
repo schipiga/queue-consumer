@@ -41,6 +41,7 @@ class Worker(Thread):
 
         except Exception as exc:
             support.logger.error(f'Oops! Worker is failed: {repr(e)}', exc_info=exc)
+            raise
 
     def shutdown(self):
         self._shutdown = True

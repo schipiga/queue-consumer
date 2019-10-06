@@ -30,6 +30,7 @@ class Consumer:
         self._worker_polling_time = worker_polling_time
         self._workers = [self._get_worker() for _ in range(max_workers)]
         self._shutdown = False
+        self._supervise = False
 
     def start(self):
         for worker in self._workers:
@@ -38,6 +39,8 @@ class Consumer:
 
     def shutdown(self):
         self._shutdown = True
+        while self._supervise:
+            pass
         for worker in self._workers:
             worker.shutdown()
         support.logger.info('Queue Consumer is shutdown')
@@ -47,6 +50,7 @@ class Consumer:
             f'Consumer supervising in {"blocking" if blocking else "non-blocking"} mode ...')
 
         def _supervise():
+            self._supervise = True
             while True:
 
                 workers = []
@@ -60,11 +64,12 @@ class Consumer:
                         new_worker = self._get_worker()
                         new_worker.start()
                         workers.append(new_worker)
+                self._workers = workers
 
                 if self._shutdown:
+                    self._supervise = False
                     return
 
-                self._workers = workers
                 time.sleep(polling_time)
 
         if blocking:
