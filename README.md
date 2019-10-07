@@ -18,14 +18,13 @@ from queue_consumer import Consumer
 class Queue:
 
     def __init__(self,
-                queue_name,
-                max_number_of_messages=10,
-                wait_time_seconds=20):
+                 queue_name,
+                 max_number_of_messages=10,
+                 wait_time_seconds=20):
         self._max_number_of_messages = max_number_of_messages
         self._wait_time_seconds = wait_time_seconds
         self._sqs = boto3.resource("sqs").get_queue_by_name(
             QueueName=queue_name)
-
 
     def get(self):
         return self._sqs.receive_messages(
