@@ -26,6 +26,7 @@ class Worker(Thread):
         try:
             while True:
                 messages = self._queue.get()
+                support.statsd.increment('received.messages', len(messages))
 
                 for chunk in chunkify(messages, self._bulk_size):
                     iterator = iter(chunk)
