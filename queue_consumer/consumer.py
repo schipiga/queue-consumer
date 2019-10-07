@@ -1,6 +1,6 @@
 import time
 from multiprocessing import cpu_count
-from threading import Thread
+from threading import Thread, Event
 
 from bounded_pool import BoundedThreadPool
 
@@ -30,7 +30,7 @@ class Consumer:
         self._worker_polling_time = worker_polling_time
         self._workers = [self._get_worker() for _ in range(max_workers)]
         self._shutdown = False
-        self._supervise = False
+        self._no_supervise = Event()
 
     def start(self):
         for worker in self._workers:
@@ -39,18 +39,16 @@ class Consumer:
 
     def shutdown(self):
         self._shutdown = True
-        while self._supervise:
-            pass
+        self._no_supervise.wait()
         for worker in self._workers:
             worker.shutdown()
         support.logger.info('Queue Consumer is shutdown')
 
     def supervise(self, blocking=False, polling_time=1):
         support.logger.debug(
-            f'Consumer supervising in {"blocking" if blocking else "non-blocking"} mode ...')
+            f'Queue Consumer supervising in {"blocking" if blocking else "non-blocking"} mode ...')
 
         def _supervise():
-            self._supervise = True
             while True:
 
                 workers = []
@@ -67,7 +65,7 @@ class Consumer:
                 self._workers = workers
 
                 if self._shutdown:
-                    self._supervise = False
+                    self._no_supervise.set()
                     return
 
                 time.sleep(polling_time)

@@ -4,7 +4,7 @@ from setuptools import setup
 setup(
     name='queue_consumer',
     version='0.1',
-    description='Bounded processes & threads pool executor',
+    description='Abstract Concurrent Queue Consumer',
     url='https://github.com/schipiga/queue-consumer/',
     author='Sergei Chipiga <chipiga86@gmail.com>',
     author_email='chipiga86@gmail.com',
