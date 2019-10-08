@@ -33,6 +33,11 @@ class Worker(Thread):
         self._bulk_size = bulk_size
         self._polling_time = polling_time
         self._shutdown = False
+
+        support.statsd.increment('started.messages', 0)
+        support.statsd.increment('failed.messages', 0)
+        support.statsd.increment('successful.messages', 0)
+
         super().__init__()
 
     @capture_error

@@ -31,6 +31,7 @@ class Consumer:
         self._workers = [self._get_worker() for _ in range(max_workers)]
         self._shutdown = False
         self._no_supervise = Event()
+        support.statsd.increment('revived.workers', 0)
 
     def start(self):
         for worker in self._workers:
