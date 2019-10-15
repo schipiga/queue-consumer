@@ -34,6 +34,8 @@ class Worker(Thread):
         self._polling_time = polling_time
         self._shutdown = False
 
+        support.statsd.increment('request.messages', 0)
+        support.statsd.increment('received.messages', 0)
         support.statsd.increment('started.messages', 0)
         support.statsd.increment('failed.messages', 0)
         support.statsd.increment('successful.messages', 0)
@@ -45,6 +47,7 @@ class Worker(Thread):
         support.logger.info('Consumer worker is running')
 
         while True:
+            support.statsd.increment('request.messages')
             messages = self._queue.get()
             support.statsd.increment('received.messages', len(messages))
 
