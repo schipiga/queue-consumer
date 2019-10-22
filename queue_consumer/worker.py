@@ -26,10 +26,17 @@ def capture_error(func):
 
 class Worker(Thread):
 
-    def __init__(self, queue, executor, handler, bulk_size=1, polling_time=0):
+    def __init__(self,
+                 queue,
+                 executor,
+                 handler,
+                 handlers_pool,
+                 bulk_size=1,
+                 polling_time=0):
         self._queue = queue
         self._executor = executor
         self._handler = handler
+        self._handlers_pool = handlers_pool
         self._bulk_size = bulk_size
         self._polling_time = polling_time
         self._shutdown = False
@@ -40,7 +47,7 @@ class Worker(Thread):
         support.statsd.increment('failed.messages', 0)
         support.statsd.increment('successful.messages', 0)
 
-        super().__init__()
+        super().__init__(daemon=True)
 
     @capture_error
     def run(self):
@@ -55,6 +62,7 @@ class Worker(Thread):
                 iterator = iter(chunk)
 
                 future = self._executor.schedule(self._handler, args=(iterator,))
+                self._handlers_pool[future] = time.time()
                 future.add_done_callback(
                     partial(self._task_done, sent_messages=chunk))
 
